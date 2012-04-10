@@ -5,7 +5,7 @@
 #include "vector.h"
 
 template<int N> template<typename F> void GA<N>::run
-    (F &f, Individual lower_boundary, Individual upper_boundary, Individual *initial_population, int initial_population_size)
+    (F &f, Individual _lower_boundary, Individual _upper_boundary, Individual *initial_population, int initial_population_size)
 {
     // seed initial population
     if(initial_population == NULL)
@@ -31,8 +31,8 @@ template<int N> template<typename F> void GA<N>::run
             population[i] = random_individual(lower_boundary, upper_boundary);
     }
     
-    population_range_lower = lower_boundary;
-    population_range_upper = upper_boundary;
+    lower_boundary = _lower_boundary;
+    upper_boundary = _upper_boundary;
 
     int
         n_crossover_children = floor(0.5 + options.crossover_fraction * (options.population_size - options.n_elite)),
@@ -149,7 +149,7 @@ template <int N> void GA<N>::crossover_scattered
         }
     }
     
-    if( !(child <= population_range_upper && child >= population_range_lower) )
+    if( !feasible(child) )
         crossover_arithmetic(parent1, parent2, child);
 }
 
@@ -166,8 +166,8 @@ template <int N> void GA<N>::crossover_BLX
                high = parent2[i] + I * options.crossover_BLX_alpha;
 
         child[i] = low + R * (high - low);
-        child[i] = std::max(child[i], population_range_lower[i]);
-        child[i] = std::min(child[i], population_range_upper[i]);
+        child[i] = std::max(child[i], lower_boundary[i]);
+        child[i] = std::min(child[i], upper_boundary[i]);
     }
 }
 
@@ -178,7 +178,7 @@ template <int N> void GA<N>::mutation_gaussian
 {
     // this mutation breaks constraints
     double scale_factor = options.mutation_gaussian_scale * (1. - options.mutation_gaussian_shrink * generation / options.max_generations);
-    Individual scale = scale_factor * (population_range_upper - population_range_lower);
+    Individual scale = scale_factor * (upper_boundary - lower_boundary);
 
     for(int i = 0; i < N; ++i)
         child[i] = parent[i] + scale[i] * normal01(rnd_generator);
@@ -205,7 +205,7 @@ template <int N> void GA<N>::mutation_adaptive
     Individual scale;
     for(int i = 0; i < N; i++)
     {
-        double exponent = 0.5 * ( log(fabs(population_range_lower[i])) + log(fabs(population_range_upper[i])) ) / log(2.);
+        double exponent = 0.5 * ( log(fabs(lower_boundary[i])) + log(fabs(upper_boundary[i])) ) / log(2.);
         scale[i] = pow(2., exponent);
     }
 
@@ -224,7 +224,7 @@ template <int N> void GA<N>::mutation_adaptive
     // calculate mutation direction set
     for(int i = 0; i < N; i++)
     {
-        if( fabs(parent[i] - population_range_lower[i]) < tol || fabs(parent[i] - population_range_upper[i]) < tol )
+        if( fabs(parent[i] - lower_boundary[i]) < tol || fabs(parent[i] - upper_boundary[i]) < tol )
         {
             tangent_cone[n_tangent] = 0.;
             tangent_cone[n_tangent][i] = 1.;
@@ -283,7 +283,7 @@ template <int N> void GA<N>::mutation_adaptive
         
         child = parent + ma_step_size * scale * direction;
 
-        if( child <= population_range_upper && child >= population_range_lower )
+        if(feasible(child))
         {
             success = true;
             break;
@@ -306,5 +306,15 @@ template<int N> typename GA<N>::Individual GA<N>::random_individual
 }
 
 
+template<int N> bool GA<N>::feasible(const Individual &x)
+{
+    for(int i = 0; i < N; i++)
+    {
+        if(x[i] > upper_boundary[i] || x[i] < lower_boundary[i])
+            return false;
+    }
+
+    return true;
+}
 
 #endif

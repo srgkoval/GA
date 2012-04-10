@@ -101,8 +101,8 @@ public:
     int *score_index,
         *parents;
 
-    Individual population_range_lower,
-               population_range_upper;
+    Individual lower_boundary,
+               upper_boundary;
 
     FitnessScaling scaling_rank;
     Selection selection_stochastic_uniform;
@@ -126,6 +126,7 @@ public:
     ~GA();
 
     Individual random_individual(const typename Individual &lower_boundary, const typename Individual &upper_boundary);
+    bool feasible(const Individual &x);
     
     template<typename F> void run(F &f, Individual lower_boundary, Individual upper_boundary, Individual *initial_population = NULL, int initial_population_size = 0);
 
