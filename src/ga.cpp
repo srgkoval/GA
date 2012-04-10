@@ -31,6 +31,9 @@ template<int N> template<typename F> void GA<N>::run
             population[i] = random_individual(lower_boundary, upper_boundary);
     }
     
+    population_range_lower = lower_boundary;
+    population_range_upper = upper_boundary;
+
     int
         n_crossover_children = floor(0.5 + options.crossover_fraction * (options.population_size - options.n_elite)),
         n_mutation_children = options.population_size - options.n_elite - n_crossover_children,
@@ -54,6 +57,14 @@ template<int N> template<typename F> void GA<N>::run
         std::cout << best_score[generation] << "\t" << population[score_index[0]] << "\n";
 
         (this->*options.scaling)();
+        
+        // normalize fitness so that total fitness sum is 1.
+        double cumulative_fitness = 0;
+        for(int i = 0; i < options.population_size; i++)
+            cumulative_fitness += fitness[i];
+        for(int i = 0; i < options.population_size; i++)
+            fitness[i] /= cumulative_fitness;
+
         (this->*options.selection)(n_parents);
 
         std::random_shuffle(parents, parents + n_parents);
@@ -87,13 +98,9 @@ template <int N> void GA<N>::selection_stochastic_uniform(int n)
 {
     double *wheel = new double[options.population_size];
     
-    double cumulative_fitness = 0;
-    for(int i = 0; i < options.population_size; i++)
-        cumulative_fitness += fitness[i];
-    
-    wheel[0] = fitness[0] / cumulative_fitness;
+    wheel[0] = fitness[0];
     for(int i = 1; i < options.population_size; ++i)
-        wheel[i] = wheel[i - 1] +  fitness[i] / cumulative_fitness;
+        wheel[i] = wheel[i - 1] +  fitness[i];
 
     double step = 1. / (double)n,
            position = dist01(rnd_generator) * step;
@@ -138,18 +145,20 @@ template <int N> void GA<N>::crossover_scattered
         }
     }
     
-    // may break boundary conditions <===============================================================================!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    if( !(child <= population_range_upper && child >= population_range_lower) )
+        crossover_arithmetic(parent1, parent2, child);
 }
 
 
 template <int N> void GA<N>::mutation_gaussian
 	(const Individual &parent, Individual &child)
 {
-    double scale = options.mutation_gaussian_scale * (1. - options.mutation_gaussian_shrink * generation / options.max_generations);
-    scale = scale; // * (population_range_upper - population_range_lower);
+    // this mutation breaks constraints. So it is useless =(
+    double scale_factor = options.mutation_gaussian_scale * (1. - options.mutation_gaussian_shrink * generation / options.max_generations);
+    Individual scale = scale_factor * (population_range_upper - population_range_lower);
 
     for(int i = 0; i < N; ++i)
-        child[i] = parent[i] + scale * normal01(rnd_generator);
+        child[i] = parent[i] + scale[i] * normal01(rnd_generator);
 }
 
 

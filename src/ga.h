@@ -42,8 +42,8 @@ public:
         max_generations = 100;
 
         crossover_fraction = 0.8;
-        mutation_gaussian_scale = 1.;
-        mutation_gaussian_shrink = 1.;
+        mutation_gaussian_scale = 0.5;
+        mutation_gaussian_shrink = 0.75;
 
         scaling = &GA<N>::scaling_rank;
         selection = &GA<N>::selection_stochastic_uniform;
@@ -99,8 +99,8 @@ public:
     int *score_index,
         *parents;
 
-    double population_range_lower,
-           population_range_upper;
+    Individual population_range_lower,
+               population_range_upper;
 
     FitnessScaling scaling_rank;
     Selection selection_stochastic_uniform;
