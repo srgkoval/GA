@@ -3,10 +3,14 @@
 
 #include "ga.h"
 #include "vector.h"
+#include "support.h"
 
 template<int N> template<typename F> void GA<N>::run
     (F &f, Individual _lower_boundary, Individual _upper_boundary, Individual *initial_population, int initial_population_size)
 {
+    lower_boundary = _lower_boundary;
+    upper_boundary = _upper_boundary;
+
     // seed initial population
     if(initial_population == NULL)
     {
@@ -20,7 +24,7 @@ template<int N> template<typename F> void GA<N>::run
         for(int i = 0; i < initial_size; i++)
         {
             population[i] = initial_population[i];
-            if( !(population[i] >= lower_boundary && population[i] <= upper_boundary) )
+            if( !feasible(population[i]) )
             {
                 std::cout << "GA::run: initial population individual " << i << " is violating boundaries\n";
                 wait_and_exit();
@@ -30,9 +34,6 @@ template<int N> template<typename F> void GA<N>::run
         for(int i = initial_size; i < options.population_size; i++)
             population[i] = random_individual(lower_boundary, upper_boundary);
     }
-    
-    lower_boundary = _lower_boundary;
-    upper_boundary = _upper_boundary;
 
     int
         n_crossover_children = floor(0.5 + options.crossover_fraction * (options.population_size - options.n_elite)),
@@ -40,6 +41,8 @@ template<int N> template<typename F> void GA<N>::run
         n_parents = n_mutation_children + 2 * n_crossover_children;
     
     generation = 0;
+    last_improvement_generation = 0;
+
     for(int gen = 0; gen < options.max_generations; gen++)
     {
         // score the population
@@ -54,8 +57,25 @@ template<int N> template<typename F> void GA<N>::run
         std::sort(score_index, score_index + options.population_size, comp);
 
         best_score[generation] = score[score_index[0]];
+        best_individual[generation] = population[score_index[0]];
 
-        std::cout << best_score[generation] << "\t" << population[score_index[0]] << "\n";
+        if(options.verbose)
+        {
+            std::cout << generation << "\t" << best_score[generation] << "\t" << population[score_index[0]] << "\n";
+        }
+
+        if(generation == options.max_generations - 1)
+            break;
+
+        if(generation > 0)
+        {
+            if(best_score[generation] < best_score[generation - 1])
+                last_improvement_generation = generation;
+        }
+
+        // break if no improvement for last 'options.stall_generations_limit' generations
+        if(generation - last_improvement_generation > options.stall_generations_limit)
+            break;
 
         (this->*options.scaling)();
         
@@ -166,6 +186,8 @@ template <int N> void GA<N>::crossover_BLX
                high = parent2[i] + I * options.crossover_BLX_alpha;
 
         child[i] = low + R * (high - low);
+
+        // modify child to satisfy constraints
         child[i] = std::max(child[i], lower_boundary[i]);
         child[i] = std::min(child[i], upper_boundary[i]);
     }
@@ -209,7 +231,8 @@ template <int N> void GA<N>::mutation_adaptive
         scale[i] = pow(2., exponent);
     }
 
-    Individual basis[N],
+    Individual raw_basis[N],
+               basis[N],
                tangent_cone[N],
                dir[2 * N];
     double dir_sign[4 * N];
@@ -222,6 +245,7 @@ template <int N> void GA<N>::mutation_adaptive
         order_vector[4 * N];
 
     // calculate mutation direction set
+    // tangent components
     for(int i = 0; i < N; i++)
     {
         if( fabs(parent[i] - lower_boundary[i]) < tol || fabs(parent[i] - upper_boundary[i]) < tol )
@@ -232,8 +256,29 @@ template <int N> void GA<N>::mutation_adaptive
         }
     }
     
+    // raw basis vectors
     double poll_param = 1. / sqrt(ma_step_size);
 
+    for(int i = 0; i < n_basis; i++)
+    {
+        raw_basis[i] = 0.;
+        raw_basis[i][i] = poll_param * (dist01(rnd_generator) >= 0.5 ? 1. : -1.);
+        for(int j = i + 1; j < n_basis; j++)
+        {
+            raw_basis[i][j] = round( (poll_param + 1.) * dist01(rnd_generator) - 0.5);
+        }
+    }
+
+    // basis as random permutation of raw basis
+    for(int j = 0; j < n_basis; j++)
+        order_vector[j] = j;
+    std::random_shuffle(order_vector, order_vector + n_basis);
+
+    for(int i = 0; i < n_basis; i++)
+        for(int j = 0; j < n_basis; j++)
+            basis[i][j] = raw_basis[order_vector[i]][order_vector[j]];
+
+    // prerare random direction mutation
     int n_dir = n_tangent + n_basis;
 
     for(int i = 0; i < n_basis; i++)

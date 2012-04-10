@@ -22,7 +22,8 @@ public:
     int population_size,
         n_elite;
 
-    int max_generations;
+    int max_generations,
+        stall_generations_limit;
 
     double
         crossover_fraction,
@@ -34,13 +35,16 @@ public:
     typename GA<N>::pSelection selection;
     typename GA<N>::pCrossover crossover;
     typename GA<N>::pMutation mutation;
+
+    bool verbose;
     
     GA_options()
     {
         population_size = 20;
         n_elite = 2;
 
-        max_generations = 100;
+        max_generations = 200;
+        stall_generations_limit = 50;
 
         crossover_fraction = 0.8;
         crossover_BLX_alpha = 0.5;
@@ -52,6 +56,7 @@ public:
         crossover = &GA<N>::crossover_BLX;
         mutation = &GA<N>::mutation_adaptive;
 
+        verbose = true;
     }
 };
 
@@ -89,10 +94,12 @@ public:
     
     GA_options<N> options;
 
-    int generation;
+    int generation,
+        last_improvement_generation;
 
     Individual *population,
-               *children;
+               *children,
+               *best_individual;
     
     double *score,
            *fitness,
@@ -128,7 +135,7 @@ public:
     Individual random_individual(const typename Individual &lower_boundary, const typename Individual &upper_boundary);
     bool feasible(const Individual &x);
     
-    template<typename F> void run(F &f, Individual lower_boundary, Individual upper_boundary, Individual *initial_population = NULL, int initial_population_size = 0);
+    template<typename F> void run(F &f, Individual _lower_boundary, Individual _upper_boundary, Individual *initial_population = NULL, int initial_population_size = 0);
 
 };
 
@@ -141,6 +148,8 @@ template<int N> GA<N>::GA()
         
     population = new Individual [options.population_size];
     children =  new Individual [options.population_size];
+    best_individual =  new Individual [options.max_generations];
+
     score = new double [options.population_size];
     fitness = new double [options.population_size];
     best_score = new double [options.max_generations];
@@ -153,6 +162,8 @@ template<int N> GA<N>::~GA()
 {
     delete [] population;
     delete [] children;
+    delete [] best_individual;
+
     delete [] score;
     delete [] fitness;
     delete [] best_score;
