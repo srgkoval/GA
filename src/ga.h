@@ -26,6 +26,7 @@ public:
 
     double
         crossover_fraction,
+        crossover_BLX_alpha,
         mutation_gaussian_scale,
         mutation_gaussian_shrink;
 
@@ -42,18 +43,19 @@ public:
         max_generations = 100;
 
         crossover_fraction = 0.8;
+        crossover_BLX_alpha = 0.5;
         mutation_gaussian_scale = 0.5;
         mutation_gaussian_shrink = 0.75;
 
         scaling = &GA<N>::scaling_rank;
         selection = &GA<N>::selection_stochastic_uniform;
-        crossover = &GA<N>::crossover_arithmetic;
-        mutation = &GA<N>::mutation_gaussian;
+        crossover = &GA<N>::crossover_BLX;
+        mutation = &GA<N>::mutation_adaptive;
 
     }
 };
 
-// comparator class to emulate MATLAB's [~,i] = sort(scores)
+// comparator class to emulate MATLAB's [~,i] = sort(scores) functionality
 // allows sorting of int index array according to score values that correspond to these indexes
 class index_comparator
 {
@@ -106,9 +108,13 @@ public:
     Selection selection_stochastic_uniform;
 
     Crossover crossover_arithmetic,
-              crossover_scattered;
+              crossover_scattered,
+              crossover_BLX;
 
-    Mutation mutation_gaussian;
+    Mutation mutation_gaussian,
+             mutation_adaptive;
+    
+    double ma_step_size;                                    // step size for mutation adaptive
 
     mutable boost::random::mt19937 rnd_generator;
 	boost::random::uniform_real_distribution<> dist01;

@@ -38,14 +38,15 @@ template<int N> template<typename F> void GA<N>::run
         n_crossover_children = floor(0.5 + options.crossover_fraction * (options.population_size - options.n_elite)),
         n_mutation_children = options.population_size - options.n_elite - n_crossover_children,
         n_parents = n_mutation_children + 2 * n_crossover_children;
-
+    
+    generation = 0;
     for(int gen = 0; gen < options.max_generations; gen++)
     {
         // score the population
         for(int i = 0; i < options.population_size; i++)
             score[i] = f(population[i]);
 
-        // sort score index array accrding to score values in ascending order
+        // sort score index array according to score values in ascending order
         for(int i = 0; i < options.population_size; i++)
             score_index[i] = i;
 
@@ -64,14 +65,17 @@ template<int N> template<typename F> void GA<N>::run
             cumulative_fitness += fitness[i];
         for(int i = 0; i < options.population_size; i++)
             fitness[i] /= cumulative_fitness;
-
+        
+        // get parents' indexes
         (this->*options.selection)(n_parents);
 
         std::random_shuffle(parents, parents + n_parents);
 
+        // transfer elite children
         for(int i = 0; i < options.n_elite; i++)
             children[i] = population[score_index[i]];
-    
+        
+        // perform genetic operators to get the rest of the children
         int i_parent = 0;
         for(int i = options.n_elite; i < options.n_elite + n_mutation_children; ++i, ++i_parent)
             (this->*options.mutation) (population[parents[i_parent]], children[i]);
@@ -150,6 +154,25 @@ template <int N> void GA<N>::crossover_scattered
 }
 
 
+template <int N> void GA<N>::crossover_BLX
+	(const Individual &parent1, const Individual &parent2, Individual &child)
+{
+    for(int i = 0; i < N; i++)
+    {
+        double R = dist01(rnd_generator);
+
+        double I = parent2[i] - parent1[i],
+               low = parent1[i] - I * options.crossover_BLX_alpha,
+               high = parent2[i] + I * options.crossover_BLX_alpha;
+
+        child[i] = low + R * (high - low);
+        child[i] = std::max(child[i], population_range_lower[i]);
+        child[i] = std::min(child[i], population_range_upper[i]);
+    }
+}
+
+
+
 template <int N> void GA<N>::mutation_gaussian
 	(const Individual &parent, Individual &child)
 {
@@ -159,6 +182,26 @@ template <int N> void GA<N>::mutation_gaussian
 
     for(int i = 0; i < N; ++i)
         child[i] = parent[i] + scale[i] * normal01(rnd_generator);
+}
+
+
+template <int N> void GA<N>::mutation_adaptive
+	(const Individual &parent, Individual &child)
+{
+    if(generation <= 1)
+    {
+        ma_step_size = 1.;
+    }
+    else
+    {
+        if(best_score[generation] < best_score[generation - 1])
+            ma_step_size = std::min(1., ma_step_size * 4.);
+        else
+            ma_step_size = std::max(1.e-8, ma_step_size / 4.);
+    }
+
+
+
 }
 
 
