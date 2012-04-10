@@ -21,6 +21,12 @@ void wait_and_exit(std::string error_message)
 	wait_and_exit();
 }
 
+
+double round(double x)
+{
+    return x < 0.0 ? ceil(x - 0.5) : floor(x + 0.5);
+}
+
 // file import/export =============================================================================
 
 void f_read_table(double *x, double *y, int *n, const std::string &filename)

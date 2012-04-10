@@ -176,7 +176,7 @@ template <int N> void GA<N>::crossover_BLX
 template <int N> void GA<N>::mutation_gaussian
 	(const Individual &parent, Individual &child)
 {
-    // this mutation breaks constraints. So it is useless =(
+    // this mutation breaks constraints
     double scale_factor = options.mutation_gaussian_scale * (1. - options.mutation_gaussian_shrink * generation / options.max_generations);
     Individual scale = scale_factor * (population_range_upper - population_range_lower);
 
@@ -188,6 +188,7 @@ template <int N> void GA<N>::mutation_gaussian
 template <int N> void GA<N>::mutation_adaptive
 	(const Individual &parent, Individual &child)
 {
+    // set step size
     if(generation <= 1)
     {
         ma_step_size = 1.;
@@ -200,8 +201,97 @@ template <int N> void GA<N>::mutation_adaptive
             ma_step_size = std::max(1.e-8, ma_step_size / 4.);
     }
 
+    // set logarithmic scale
+    Individual scale;
+    for(int i = 0; i < N; i++)
+    {
+        double exponent = 0.5 * ( log(fabs(population_range_lower[i])) + log(fabs(population_range_upper[i])) ) / log(2.);
+        scale[i] = pow(2., exponent);
+    }
 
+    Individual basis[N],
+               tangent_cone[N],
+               dir[2 * N];
+    double dir_sign[4 * N];
 
+    double tol = 1.e-8;                                                             // pure magic
+
+    int n_tangent = 0,
+        n_basis = N,
+        index_vector[4 * N],
+        order_vector[4 * N];
+
+    // calculate mutation direction set
+    for(int i = 0; i < N; i++)
+    {
+        if( fabs(parent[i] - population_range_lower[i]) < tol || fabs(parent[i] - population_range_upper[i]) < tol )
+        {
+            tangent_cone[n_tangent] = 0.;
+            tangent_cone[n_tangent][i] = 1.;
+            n_tangent++;
+        }
+    }
+    
+    double poll_param = 1. / sqrt(ma_step_size);
+
+    int n_dir = n_tangent + n_basis;
+
+    for(int i = 0; i < n_basis; i++)
+        dir[i] = basis[i];
+
+    for(int i = 0; i < n_tangent; i++)
+        dir[n_basis + i] = tangent_cone[i];
+
+    for(int i = 0; i < n_basis; i++)
+    {
+        index_vector[i] = i;
+        dir_sign[i] = 1.;
+    }
+    
+    int i_base = n_basis;
+    for(int i = i_base; i < i_base + n_basis; i++)
+    {
+        index_vector[i] = i - i_base;
+        dir_sign[i] = -1.;
+    }
+    
+    i_base += n_basis;
+    for(int i = i_base; i < i_base + n_tangent; i++)
+    {
+        index_vector[i] = i - i_base;
+        dir_sign[i] = 1.;
+    }
+    
+    i_base += n_tangent;
+    for(int i = i_base; i < i_base + n_tangent; i++)
+    {
+        index_vector[i] = i - i_base;
+        dir_sign[i] = -1.;
+    }
+    
+    int n_dir_total = 2 * n_dir;
+    for(int i = 0; i < n_dir_total; i++)
+        order_vector[i] = i;
+    std::random_shuffle(order_vector, order_vector + n_dir_total);
+
+    // finally, mutate
+    double success = false;
+    for(int i = 0; i < n_dir_total; i++)
+    {
+        int k = index_vector[order_vector[i]];
+        Individual direction = dir_sign[k] * dir[k];
+        
+        child = parent + ma_step_size * scale * direction;
+
+        if( child <= population_range_upper && child >= population_range_lower )
+        {
+            success = true;
+            break;
+        }
+    }
+
+    if( !success )
+        child = parent;
 }
 
 
