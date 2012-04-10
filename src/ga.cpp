@@ -80,7 +80,7 @@ template<int N> template<typename F> void GA<N>::run
         (this->*options.scaling)();
         
         // normalize fitness so that total fitness sum is 1.
-        double cumulative_fitness = 0;
+        double cumulative_fitness = 0.;
         for(int i = 0; i < options.population_size; i++)
             cumulative_fitness += fitness[i];
         for(int i = 0; i < options.population_size; i++)
@@ -111,12 +111,16 @@ template<int N> template<typename F> void GA<N>::run
 }
 
 
+// scaling ========================================================================================
+
 template <int N> void GA<N>::scaling_rank()
 {
     for(int i = 0; i < options.population_size; i++)
         fitness[score_index[i]] = 1. / sqrt(i + 1.);  
 }
 
+
+// selection ======================================================================================
 
 template <int N> void GA<N>::selection_stochastic_uniform(int n)
 {
@@ -145,6 +149,30 @@ template <int N> void GA<N>::selection_stochastic_uniform(int n)
     }
 }
 
+
+template <int N> void GA<N>::selection_tournament(int n)
+{
+    int *indexes = new int [options.population_size];
+    for(int i = 0; i < options.population_size; ++i)
+        indexes[i] = i;
+
+    for(int i = 0; i < n; i++)
+    {
+        std::random_shuffle(indexes, indexes + options.population_size);
+        
+        parents[i] = indexes[0];
+        for(int j = 1; j < options.tournament_size; j++)
+        {
+            if(fitness[indexes[j]] > fitness[parents[i]])
+                parents[i] = indexes[j];
+        }
+    }
+
+    delete [] indexes;
+}
+
+
+// crossover ======================================================================================
 
 template <int N> void GA<N>::crossover_arithmetic
 	(const Individual &parent1, const Individual &parent2, Individual &child)
@@ -194,6 +222,7 @@ template <int N> void GA<N>::crossover_BLX
 }
 
 
+// mutation =======================================================================================
 
 template <int N> void GA<N>::mutation_gaussian
 	(const Individual &parent, Individual &child)
@@ -339,6 +368,8 @@ template <int N> void GA<N>::mutation_adaptive
         child = parent;
 }
 
+
+// all the rest ===================================================================================
 
 template<int N> typename GA<N>::Individual GA<N>::random_individual
     (const typename Individual &lower_boundary, const typename Individual &upper_boundary)

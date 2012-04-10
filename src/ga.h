@@ -12,9 +12,11 @@
 
 #include "vector.h"
 
+
 // forward declarations
 template <int N> class GA;
 template <int N> class GA_options;  
+
 
 template <int N> class GA_options
 {
@@ -24,6 +26,8 @@ public:
 
     int max_generations,
         stall_generations_limit;
+
+    int tournament_size;
 
     double
         crossover_fraction,
@@ -40,11 +44,13 @@ public:
     
     GA_options()
     {
-        population_size = 20;
+        population_size = 50;
         n_elite = 2;
 
         max_generations = 200;
         stall_generations_limit = 50;
+
+        tournament_size = 4;
 
         crossover_fraction = 0.8;
         crossover_BLX_alpha = 0.5;
@@ -59,6 +65,7 @@ public:
         verbose = true;
     }
 };
+
 
 // comparator class to emulate MATLAB's [~,i] = sort(scores) functionality
 // allows sorting of int index array according to score values that correspond to these indexes
@@ -112,7 +119,9 @@ public:
                upper_boundary;
 
     FitnessScaling scaling_rank;
-    Selection selection_stochastic_uniform;
+
+    Selection selection_stochastic_uniform,
+              selection_tournament;
 
     Crossover crossover_arithmetic,
               crossover_scattered,
