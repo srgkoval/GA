@@ -242,6 +242,8 @@ template <int N> void GA<N>::mutation_gaussian
 template <int N> void GA<N>::mutation_adaptive
 	(const Individual &parent, Individual &child)
 {
+    double tol = 1.e-8;             // tolerance, pure magic
+
     // set step size
     if(generation <= 1)
     {
@@ -254,7 +256,7 @@ template <int N> void GA<N>::mutation_adaptive
             if(best_score[generation] < best_score[generation - 1])
                 ma_step_size = std::min(1., ma_step_size * 4.);
             else
-                ma_step_size = std::max(1.e-8, ma_step_size / 4.);
+                ma_step_size = std::max(tol, ma_step_size / 4.);
             
             ma_step_changed = true;
         }
@@ -264,7 +266,12 @@ template <int N> void GA<N>::mutation_adaptive
     Individual scale;
     for(int i = 0; i < N; i++)
     {
-        double exponent = 0.5 * ( log(fabs(lower_boundary[i])) + log(fabs(upper_boundary[i])) ) / log(2.);
+        double exponent = 0.;
+        if( fabs(lower_boundary[i]) > tol )
+            exponent += 0.5 * log(fabs(lower_boundary[i])) / log(2.);
+        if( fabs(upper_boundary[i]) > tol )
+            exponent += 0.5 * log(fabs(upper_boundary[i])) / log(2.);
+
         scale[i] = pow(2., exponent);
     }
 
@@ -273,8 +280,6 @@ template <int N> void GA<N>::mutation_adaptive
                tangent_cone[N],
                dir[2 * N];
     double dir_sign[4 * N];
-
-    double tol = 1.e-8;                                                             // pure magic
 
     int n_tangent = 0,
         n_basis = N,
