@@ -85,10 +85,10 @@ template <typename T, int n> inline Vector<T,n> linear_combination8(double k0, V
 
 // VECTOR =================================================================================================================================
 
-template <typename X, int N> std::ostream & operator<<(std::ostream &os, Vector<X, N> &op);
+template <typename X, int N> std::ostream & operator<<(std::ostream &os, const Vector<X, N> &op);
 
 
-template <typename X, int N> std::ostream & operator<<(std::ostream &os, Vector<X, N> &op)
+template <typename X, int N> std::ostream & operator<<(std::ostream &os, const Vector<X, N> &op)
 {
 //	os << " (";
 	if (op.size() > 0)

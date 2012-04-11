@@ -4,7 +4,7 @@
 #include "ga.h"
 #include "test.h"
 
-const int n_arg = 10;
+const int n_arg = 2;
 
 void main()
 {
@@ -15,7 +15,7 @@ void main()
     Vector<double, n_arg> lower, upper;
 
     lower = -1.;
-    upper = 1.;
+    upper = 10.;
     alg.run(rastrigin<n_arg>, lower, upper);
    // alg.run(schwefel<n_arg>, Vector<double, n_arg>(-500., -500.), Vector<double, n_arg>(500., 500.));
    // alg.run(rosenbrock<n_arg>, Vector<double, n_arg>(-2., -2.), Vector<double, n_arg>(2., 2.));

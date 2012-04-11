@@ -44,10 +44,10 @@ public:
     
     GA_options()
     {
-        population_size = 50;
+        population_size = 20;
         n_elite = 2;
 
-        max_generations = 200;
+        max_generations = 100;
         stall_generations_limit = 50;
 
         tournament_size = 4;
@@ -59,7 +59,7 @@ public:
 
         scaling = &GA<N>::scaling_rank;
         selection = &GA<N>::selection_stochastic_uniform;
-        crossover = &GA<N>::crossover_BLX;
+        crossover = &GA<N>::crossover_scattered;
         mutation = &GA<N>::mutation_adaptive;
 
         verbose = true;

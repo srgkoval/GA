@@ -365,7 +365,11 @@ template <int N> void GA<N>::mutation_adaptive
     }
 
     if( !success )
+    {
         child = parent;
+        if(options.verbose)
+            std::cout << "mutation failed at x = " << parent << "\n";
+    }
 }
 
 
