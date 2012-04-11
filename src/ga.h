@@ -59,7 +59,7 @@ public:
 
         scaling = &GA<N>::scaling_rank;
         selection = &GA<N>::selection_stochastic_uniform;
-        crossover = &GA<N>::crossover_scattered;
+        crossover = &GA<N>::crossover_BLX;
         mutation = &GA<N>::mutation_adaptive;
 
         verbose = true;
@@ -131,6 +131,7 @@ public:
              mutation_adaptive;
     
     double ma_step_size;                                    // step size for mutation adaptive
+    bool ma_step_changed;                                      // flag for adaptive mutation to change step once in generation
 
     mutable boost::random::mt19937 rnd_generator;
 	boost::random::uniform_real_distribution<> dist01;

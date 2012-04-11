@@ -96,6 +96,7 @@ template<int N> template<typename F> void GA<N>::run
             children[i] = population[score_index[i]];
         
         // perform genetic operators to get the rest of the children
+        ma_step_changed = false;
         int i_parent = 0;
         for(int i = options.n_elite; i < options.n_elite + n_mutation_children; ++i, ++i_parent)
             (this->*options.mutation) (population[parents[i_parent]], children[i]);
@@ -216,8 +217,10 @@ template <int N> void GA<N>::crossover_BLX
         child[i] = low + R * (high - low);
 
         // modify child to satisfy constraints
-        child[i] = std::max(child[i], lower_boundary[i]);
-        child[i] = std::min(child[i], upper_boundary[i]);
+        //child[i] = std::max(child[i], lower_boundary[i]);
+        //child[i] = std::min(child[i], upper_boundary[i]);
+        if(child[i] < lower_boundary[i] || child[i] > upper_boundary[i])
+            child[i] = (parent1[i] + parent2[i]) / 2.;
     }
 }
 
@@ -246,10 +249,15 @@ template <int N> void GA<N>::mutation_adaptive
     }
     else
     {
-        if(best_score[generation] < best_score[generation - 1])
-            ma_step_size = std::min(1., ma_step_size * 4.);
-        else
-            ma_step_size = std::max(1.e-8, ma_step_size / 4.);
+        if(!ma_step_changed)
+        {
+            if(best_score[generation] < best_score[generation - 1])
+                ma_step_size = std::min(1., ma_step_size * 4.);
+            else
+                ma_step_size = std::max(1.e-8, ma_step_size / 4.);
+            
+            ma_step_changed = true;
+        }
     }
 
     // set logarithmic scale
