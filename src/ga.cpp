@@ -8,32 +8,22 @@
 template<int N, int N_obj> template<typename F> void GA<N, N_obj>::run
     (F &f, Individual _lower_boundary, Individual _upper_boundary, Individual *initial_population, int initial_population_size)
 {
+    if(N_obj != 1)
+    {
+        std::cout << "GA::run: attempt to call single-objective solver with " << N_obj << " objectives\n";
+        wait_and_exit();
+    }
+
+    if(!first_run)
+    {
+        memory_clear();
+        memory_allocate();
+    }
+
     lower_boundary = _lower_boundary;
     upper_boundary = _upper_boundary;
 
-    // seed initial population
-    if(initial_population == NULL)
-    {
-        for(int i = 0; i < options.population_size; ++i)
-            population[i] = random_individual(lower_boundary, upper_boundary);
-    }
-    else
-    {
-        int initial_size = (initial_population_size == 0 ? options.population_size: initial_population_size);
-        
-        for(int i = 0; i < initial_size; i++)
-        {
-            population[i] = initial_population[i];
-            if( !feasible(population[i]) )
-            {
-                std::cout << "GA::run: initial population individual " << i << " is violating boundaries\n";
-                wait_and_exit();
-            }
-        }
-
-        for(int i = initial_size; i < options.population_size; i++)
-            population[i] = random_individual(lower_boundary, upper_boundary);
-    }
+    seed_population(initial_population, initial_population_size);
 
     int
         n_crossover_children = floor(0.5 + options.crossover_fraction * (options.population_size - options.n_elite)),
@@ -115,12 +105,52 @@ template<int N, int N_obj> template<typename F> void GA<N, N_obj>::run
 template<int N, int N_obj> template<typename F> void GA<N, N_obj>::run_multiobjective
     (F &f, Individual _lower_boundary, Individual _upper_boundary, Individual *initial_population, int initial_population_size)
 {
+    if(N_obj < 2)
+    {
+        std::cout << "GA::run: attempt to call multi-objective solver with " << N_obj << " objective(s)\n";
+        wait_and_exit();
+    }
+
+    if(!first_run)
+    {
+        memory_clear();
+        memory_allocate();
+    }
+
     lower_boundary = _lower_boundary;
     upper_boundary = _upper_boundary;
 
-
+    seed_population(initial_population, initial_population_size);
 
 }
+
+
+template<int N, int N_obj>  void GA<N, N_obj>::seed_population(Individual *initial_population = NULL, int initial_population_size = 0)
+{
+    if(initial_population == NULL)
+    {
+        for(int i = 0; i < options.population_size; ++i)
+            population[i] = random_individual(lower_boundary, upper_boundary);
+    }
+    else
+    {
+        int initial_size = (initial_population_size == 0 ? options.population_size: initial_population_size);
+        
+        for(int i = 0; i < initial_size; i++)
+        {
+            population[i] = initial_population[i];
+            if( !feasible(population[i]) )
+            {
+                std::cout << "GA::run: initial population individual " << i << " is violating boundaries\n";
+                wait_and_exit();
+            }
+        }
+
+        for(int i = initial_size; i < options.population_size; i++)
+            population[i] = random_individual(lower_boundary, upper_boundary);
+    }
+}
+
 
 
 // scaling ========================================================================================

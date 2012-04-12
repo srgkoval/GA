@@ -115,11 +115,8 @@ public:
                *children,
                *best_individual;
     
-    //double *score,
-    //       *fitness,
-    //       *best_score;
     Objective *score,
-             *best_score;
+              *best_score;
     
     double *fitness;
 
@@ -154,11 +151,17 @@ public:
     boost::random::uniform_int_distribution<> uniform_int0N;
     boost::random::variate_generator<boost::random::mt19937, boost::random::uniform_int_distribution<>> int_gen;
 
+    bool first_run;
+    void memory_allocate();
+    void memory_clear();
+
     GA();
     ~GA();
 
     Individual random_individual(const typename Individual &lower_boundary, const typename Individual &upper_boundary);
     bool feasible(const Individual &x);
+
+    void seed_population(Individual *initial_population = NULL, int initial_population_size = 0);
     
     template<typename F> void run(F &f, Individual _lower_boundary, Individual _upper_boundary, Individual *initial_population = NULL, int initial_population_size = 0);
     template<typename F> void run_multiobjective(F &f, Individual _lower_boundary, Individual _upper_boundary,
@@ -167,12 +170,8 @@ public:
 };
 
 
-template<int N, int N_obj> GA<N, N_obj>::GA()
-    : dist01(0., 1.), generation(0), int_gen(rnd_generator, uniform_int0N)
+template<int N, int N_obj> void GA<N, N_obj>::memory_allocate()
 {
-    rnd_generator.seed(static_cast<int>(std::time(NULL)));
-    srand(unsigned(time(NULL)));
-        
     population = new Individual [options.population_size];
     children =  new Individual [options.population_size];
     best_individual =  new Individual [options.max_generations];
@@ -185,7 +184,7 @@ template<int N, int N_obj> GA<N, N_obj>::GA()
 }
 
 
-template<int N, int N_obj> GA<N, N_obj>::~GA()
+template<int N, int N_obj> void GA<N, N_obj>::memory_clear()
 {
     delete [] population;
     delete [] children;
@@ -196,6 +195,23 @@ template<int N, int N_obj> GA<N, N_obj>::~GA()
     delete [] best_score;
     delete [] score_index;
     delete [] parents;
+}
+
+
+template<int N, int N_obj> GA<N, N_obj>::GA()
+    : dist01(0., 1.), generation(0), int_gen(rnd_generator, uniform_int0N)
+{
+    rnd_generator.seed(static_cast<int>(std::time(NULL)));
+    srand(unsigned(time(NULL)));
+        
+    memory_allocate();
+    first_run = true;
+}
+
+
+template<int N, int N_obj> GA<N, N_obj>::~GA()
+{
+    memory_clear();
 }
 
 
