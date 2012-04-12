@@ -14,11 +14,11 @@
 
 
 // forward declarations
-template <int N> class GA;
-template <int N> class GA_options;  
+template <int N, int N_obj> class GA;
+template <int N, int N_obj> class GA_options;  
 
 
-template <int N> class GA_options
+template <int N, int N_obj> class GA_options
 {
 public:
     bool multiobjective_problem;
@@ -38,10 +38,10 @@ public:
         mutation_gaussian_scale,
         mutation_gaussian_shrink;
 
-    typename GA<N>::pFitnessScaling scaling;
-    typename GA<N>::pSelection selection;
-    typename GA<N>::pCrossover crossover;
-    typename GA<N>::pMutation mutation;
+    typename GA<N, N_obj>::pFitnessScaling scaling;
+    typename GA<N, N_obj>::pSelection selection;
+    typename GA<N, N_obj>::pCrossover crossover;
+    typename GA<N, N_obj>::pMutation mutation;
 
     bool verbose;
     
@@ -63,10 +63,10 @@ public:
         mutation_gaussian_scale = 0.5;
         mutation_gaussian_shrink = 0.75;
 
-        scaling = &GA<N>::scaling_rank;
-        selection = &GA<N>::selection_tournament;
-        crossover = &GA<N>::crossover_BLX;
-        mutation = &GA<N>::mutation_adaptive;
+        scaling = &GA<N, N_obj>::scaling_rank;
+        selection = &GA<N, N_obj>::selection_tournament;
+        crossover = &GA<N, N_obj>::crossover_BLX;
+        mutation = &GA<N, N_obj>::mutation_adaptive;
 
         verbose = true;
     }
@@ -75,11 +75,11 @@ public:
 
 // comparator class to emulate MATLAB's [~,i] = sort(scores) functionality
 // allows sorting of int index array according to score values that correspond to these indexes
-class index_comparator
+template <typename T = double> class index_comparator
 {
 public:
-    double *score;
-    index_comparator(double *_score): score(_score) {}
+    T *score;
+    index_comparator(T *_score): score(_score) {}
     
     bool operator()(int l, int r)
     {
@@ -88,24 +88,25 @@ public:
 };
 
 
-template <int N> class GA
+template <int N, int N_obj = 1> class GA
 {
 public:
     typedef Vector<double, N> Individual;
+    typedef Vector<double, N_obj> Objective;
 
     typedef void FitnessScaling();
-    typedef void(GA<N>::*pFitnessScaling)();
+    typedef void(GA<N, N_obj>::*pFitnessScaling)();
 
     typedef void Selection(int n);
-    typedef void (GA<N>::*pSelection)(int n);
+    typedef void (GA<N, N_obj>::*pSelection)(int n);
 
     typedef void Crossover(const Individual &parent1, const Individual &parent2, Individual &child);
-    typedef void (GA<N>::*pCrossover)(const Individual &parent1, const Individual &parent2, Individual &child);
+    typedef void (GA<N, N_obj>::*pCrossover)(const Individual &parent1, const Individual &parent2, Individual &child);
 
     typedef void Mutation(const Individual &parent, Individual &child);
     typedef void (GA::*pMutation)(const Individual &parent, Individual &child);
     
-    GA_options<N> options;
+    GA_options<N, N_obj> options;
 
     int generation,
         last_improvement_generation;
@@ -114,9 +115,13 @@ public:
                *children,
                *best_individual;
     
-    double *score,
-           *fitness,
-           *best_score;
+    //double *score,
+    //       *fitness,
+    //       *best_score;
+    Objective *score,
+             *best_score;
+    
+    double *fitness;
 
     int *score_index,
         *parents;
@@ -162,7 +167,7 @@ public:
 };
 
 
-template<int N> GA<N>::GA()
+template<int N, int N_obj> GA<N, N_obj>::GA()
     : dist01(0., 1.), generation(0), int_gen(rnd_generator, uniform_int0N)
 {
     rnd_generator.seed(static_cast<int>(std::time(NULL)));
@@ -172,15 +177,15 @@ template<int N> GA<N>::GA()
     children =  new Individual [options.population_size];
     best_individual =  new Individual [options.max_generations];
 
-    score = new double [options.population_size];
+    score = new Objective [options.population_size];
     fitness = new double [options.population_size];
-    best_score = new double [options.max_generations];
+    best_score = new Objective [options.max_generations];
     score_index = new int[options.population_size];
     parents = new int [2 * options.population_size];
 }
 
 
-template<int N> GA<N>::~GA()
+template<int N, int N_obj> GA<N, N_obj>::~GA()
 {
     delete [] population;
     delete [] children;

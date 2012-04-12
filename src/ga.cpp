@@ -5,7 +5,7 @@
 #include "vector.h"
 #include "support.h"
 
-template<int N> template<typename F> void GA<N>::run
+template<int N, int N_obj> template<typename F> void GA<N, N_obj>::run
     (F &f, Individual _lower_boundary, Individual _upper_boundary, Individual *initial_population, int initial_population_size)
 {
     lower_boundary = _lower_boundary;
@@ -53,7 +53,7 @@ template<int N> template<typename F> void GA<N>::run
         for(int i = 0; i < options.population_size; i++)
             score_index[i] = i;
 
-        index_comparator comp(score);
+        index_comparator<Objective> comp(score);
         std::sort(score_index, score_index + options.population_size, comp);
 
         best_score[generation] = score[score_index[0]];
@@ -112,7 +112,7 @@ template<int N> template<typename F> void GA<N>::run
 }
 
 
-template<int N> template<typename F> void GA<N>::run_multiobjective
+template<int N, int N_obj> template<typename F> void GA<N, N_obj>::run_multiobjective
     (F &f, Individual _lower_boundary, Individual _upper_boundary, Individual *initial_population, int initial_population_size)
 {
     lower_boundary = _lower_boundary;
@@ -125,7 +125,7 @@ template<int N> template<typename F> void GA<N>::run_multiobjective
 
 // scaling ========================================================================================
 
-template <int N> void GA<N>::scaling_rank()
+template <int N, int N_obj> void GA<N, N_obj>::scaling_rank()
 {
     for(int i = 0; i < options.population_size; i++)
         fitness[score_index[i]] = 1. / sqrt(i + 1.);  
@@ -134,7 +134,7 @@ template <int N> void GA<N>::scaling_rank()
 
 // selection ======================================================================================
 
-template <int N> void GA<N>::selection_stochastic_uniform(int n)
+template <int N, int N_obj> void GA<N, N_obj>::selection_stochastic_uniform(int n)
 {
     double *wheel = new double[options.population_size];
     
@@ -162,7 +162,7 @@ template <int N> void GA<N>::selection_stochastic_uniform(int n)
 }
 
 
-template <int N> void GA<N>::selection_tournament(int n)
+template <int N, int N_obj> void GA<N, N_obj>::selection_tournament(int n)
 {
     int *indexes = new int [options.population_size];
     for(int i = 0; i < options.population_size; ++i)
@@ -186,7 +186,7 @@ template <int N> void GA<N>::selection_tournament(int n)
 
 // crossover ======================================================================================
 
-template <int N> void GA<N>::crossover_arithmetic
+template <int N, int N_obj> void GA<N, N_obj>::crossover_arithmetic
 	(const Individual &parent1, const Individual &parent2, Individual &child)
 {
     double R = dist01(rnd_generator);
@@ -194,7 +194,7 @@ template <int N> void GA<N>::crossover_arithmetic
 }
 
 
-template <int N> void GA<N>::crossover_scattered
+template <int N, int N_obj> void GA<N, N_obj>::crossover_scattered
 	(const Individual &parent1, const Individual &parent2, Individual &child)
 {
     for(int i = 0; i < N; ++i)
@@ -214,7 +214,7 @@ template <int N> void GA<N>::crossover_scattered
 }
 
 
-template <int N> void GA<N>::crossover_BLX
+template <int N, int N_obj> void GA<N, N_obj>::crossover_BLX
 	(const Individual &parent1, const Individual &parent2, Individual &child)
 {
     for(int i = 0; i < N; i++)
@@ -238,7 +238,7 @@ template <int N> void GA<N>::crossover_BLX
 
 // mutation =======================================================================================
 
-template <int N> void GA<N>::mutation_gaussian
+template <int N, int N_obj> void GA<N, N_obj>::mutation_gaussian
 	(const Individual &parent, Individual &child)
 {
     // this mutation breaks constraints
@@ -250,7 +250,7 @@ template <int N> void GA<N>::mutation_gaussian
 }
 
 
-template <int N> void GA<N>::mutation_adaptive
+template <int N, int N_obj> void GA<N, N_obj>::mutation_adaptive
 	(const Individual &parent, Individual &child)
 {
     double tol = 1.e-8;             // tolerance, pure magic
@@ -399,7 +399,7 @@ template <int N> void GA<N>::mutation_adaptive
 
 // all the rest ===================================================================================
 
-template<int N> typename GA<N>::Individual GA<N>::random_individual
+template<int N, int N_obj> typename GA<N, N_obj>::Individual GA<N, N_obj>::random_individual
     (const typename Individual &lower_boundary, const typename Individual &upper_boundary)
 {
     Individual res;
@@ -410,7 +410,7 @@ template<int N> typename GA<N>::Individual GA<N>::random_individual
 }
 
 
-template<int N> bool GA<N>::feasible(const Individual &x)
+template<int N, int N_obj> bool GA<N, N_obj>::feasible(const Individual &x)
 {
     for(int i = 0; i < N; i++)
     {
