@@ -21,13 +21,16 @@ template <int N> class GA_options;
 template <int N> class GA_options
 {
 public:
+    bool multiobjective_problem;
+
     int population_size,
         n_elite;
 
     int max_generations,
         stall_generations_limit;
 
-    int tournament_size;
+    int tournament_size,
+        tournament_size_multiobjective;
 
     double
         crossover_fraction,
@@ -44,13 +47,16 @@ public:
     
     GA_options()
     {
-        population_size = 20;
+        multiobjective_problem = false;
+
+        population_size = 30;
         n_elite = 2;
 
         max_generations = 100;
         stall_generations_limit = 50;
 
-        tournament_size = 4;
+        tournament_size = 2;
+        tournament_size_multiobjective = 2;
 
         crossover_fraction = 0.8;
         crossover_BLX_alpha = 0.5;
@@ -58,7 +64,7 @@ public:
         mutation_gaussian_shrink = 0.75;
 
         scaling = &GA<N>::scaling_rank;
-        selection = &GA<N>::selection_stochastic_uniform;
+        selection = &GA<N>::selection_tournament;
         crossover = &GA<N>::crossover_BLX;
         mutation = &GA<N>::mutation_adaptive;
 
@@ -115,6 +121,10 @@ public:
     int *score_index,
         *parents;
 
+    // multiobjective data 
+    int *rank;
+    double *distance;
+
     Individual lower_boundary,
                upper_boundary;
 
@@ -146,6 +156,8 @@ public:
     bool feasible(const Individual &x);
     
     template<typename F> void run(F &f, Individual _lower_boundary, Individual _upper_boundary, Individual *initial_population = NULL, int initial_population_size = 0);
+    template<typename F> void run_multiobjective(F &f, Individual _lower_boundary, Individual _upper_boundary,
+        Individual *initial_population = NULL, int initial_population_size = 0);
 
 };
 

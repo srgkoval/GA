@@ -17,8 +17,8 @@ void main()
     lower = -1.;
     upper = 1.;
    //alg.run(rastrigin<n_arg>, lower, upper);
-   // alg.run(schwefel<n_arg>, Vector<double, n_arg>(-500., -500.), Vector<double, n_arg>(500., 500.));
-    alg.run(rosenbrock<n_arg>, Vector<double, n_arg>(-0., -0.), Vector<double, n_arg>(2., 2.));
+    alg.run(schwefel<n_arg>, Vector<double, n_arg>(-500., -500.), Vector<double, n_arg>(500., 500.));
+   // alg.run(rosenbrock<n_arg>, Vector<double, n_arg>(-2., -2.), Vector<double, n_arg>(2., 2.));
 	
     finish = clock();
 	std::cout << "\ntimer:\t" << (double (finish - start) / CLOCKS_PER_SEC) << std::endl;

@@ -112,6 +112,17 @@ template<int N> template<typename F> void GA<N>::run
 }
 
 
+template<int N> template<typename F> void GA<N>::run_multiobjective
+    (F &f, Individual _lower_boundary, Individual _upper_boundary, Individual *initial_population, int initial_population_size)
+{
+    lower_boundary = _lower_boundary;
+    upper_boundary = _upper_boundary;
+
+
+
+}
+
+
 // scaling ========================================================================================
 
 template <int N> void GA<N>::scaling_rank()
