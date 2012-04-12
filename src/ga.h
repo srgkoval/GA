@@ -47,9 +47,7 @@ public:
     
     GA_options()
     {
-        multiobjective_problem = false;
-
-        population_size = 30;
+        population_size = 15 * N;
         n_elite = 2;
 
         max_generations = 100;
@@ -123,9 +121,14 @@ public:
     int *score_index,
         *parents;
 
-    // multiobjective data 
+    // multiobjective data
+    Individual *archive;
+
     int *rank;
     double *distance;
+    
+    // ---
+
 
     Individual lower_boundary,
                upper_boundary;
@@ -172,7 +175,7 @@ public:
 
 template<int N, int N_obj> void GA<N, N_obj>::memory_allocate()
 {
-    population = new Individual [options.population_size];
+    population = new Individual [2 * options.population_size];
     children =  new Individual [options.population_size];
     best_individual =  new Individual [options.max_generations];
 
@@ -181,6 +184,8 @@ template<int N, int N_obj> void GA<N, N_obj>::memory_allocate()
     best_score = new Objective [options.max_generations];
     score_index = new int[options.population_size];
     parents = new int [2 * options.population_size];
+
+    archive = new Individual [options.population_size];
 }
 
 
@@ -195,6 +200,8 @@ template<int N, int N_obj> void GA<N, N_obj>::memory_clear()
     delete [] best_score;
     delete [] score_index;
     delete [] parents;
+
+    delete [] archive;
 }
 
 
