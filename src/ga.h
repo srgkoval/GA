@@ -38,6 +38,9 @@ public:
         mutation_gaussian_scale,
         mutation_gaussian_shrink;
 
+    double pareto_fraction,
+           pareto_R;
+
     typename GA<N, N_obj>::pFitnessScaling scaling;
     typename GA<N, N_obj>::pSelection selection;
     typename GA<N, N_obj>::pCrossover crossover;
@@ -50,7 +53,7 @@ public:
         population_size = 15 * N;
         n_elite = 2;
 
-        max_generations = 100;
+        max_generations = 400;
         stall_generations_limit = 50;
 
         tournament_size = 2;
@@ -60,6 +63,9 @@ public:
         crossover_BLX_alpha = 0.5;
         mutation_gaussian_scale = 0.5;
         mutation_gaussian_shrink = 0.75;
+
+        pareto_fraction = 0.35;
+        pareto_R = 0.8;
 
         scaling = &GA<N, N_obj>::scaling_rank;
         selection = &GA<N, N_obj>::selection_tournament;
@@ -73,11 +79,14 @@ public:
 
 // comparator class to emulate MATLAB's [~,i] = sort(scores) functionality
 // allows sorting of int index array according to score values that correspond to these indexes
+// no memory management needed in this class, all allocations/deallocations are handled elsewhere
 template <typename T = double> class index_comparator
 {
 public:
     T *score;
-    index_comparator(T *_score): score(_score) {}
+    index_comparator(): score(NULL) {}
+
+    void set_objective(T *_score) {score = _score;}
     
     bool operator()(int l, int r)
     {
@@ -112,21 +121,36 @@ public:
     Individual *population,
                *children,
                *best_individual;
+    int *parents;
     
     Objective *score,
               *best_score;
     
     double *fitness;
 
-    int *score_index,
-        *parents;
+    int *score_index;
 
     // multiobjective data
-    Individual *archive;
+    int *archive;
+    Individual *archive_individuals;
+    Objective *archive_score;
 
+    int total_front_ranks;
+    int *front_size;
     int *rank;
     double *distance;
-    
+
+    bool pareto_dominates(int i, int j);   // check if i-th individual Pareto dominates j-th    
+
+    int *index_rank;                    // temporary
+    double *score_for_objective;        // temporary
+
+    double *average_distance,
+           *average_distance_deviation,
+           *spread;
+
+    Vector<Objective, N_obj> *extreme_Pareto_solution;
+
     // ---
 
 
@@ -136,7 +160,8 @@ public:
     FitnessScaling scaling_rank;
 
     Selection selection_stochastic_uniform,
-              selection_tournament;
+              selection_tournament,
+              selection_tournament_multiobjective;
 
     Crossover crossover_arithmetic,
               crossover_scattered,
@@ -179,13 +204,30 @@ template<int N, int N_obj> void GA<N, N_obj>::memory_allocate()
     children =  new Individual [options.population_size];
     best_individual =  new Individual [options.max_generations];
 
-    score = new Objective [options.population_size];
+    score = new Objective [2 * options.population_size];
     fitness = new double [options.population_size];
     best_score = new Objective [options.max_generations];
     score_index = new int[options.population_size];
     parents = new int [2 * options.population_size];
 
-    archive = new Individual [options.population_size];
+    if(N_obj > 1)
+    {
+        archive = new int [options.population_size];
+        archive_individuals = new Individual [options.population_size];
+        archive_score = new Objective [options.population_size];
+  
+        front_size = new int [2 * options.population_size];
+        rank = new int [2 * options.population_size];
+        distance = new double [2 * options.population_size];
+
+        index_rank = new int [2 * options.population_size];
+        score_for_objective = new double [2 * options.population_size];
+
+        average_distance = new double [options.max_generations];
+        average_distance_deviation = new double [options.max_generations];
+        spread = new double [options.max_generations];
+        extreme_Pareto_solution = new Vector<Objective, N_obj>  [options.max_generations];
+    }
 }
 
 
@@ -201,7 +243,24 @@ template<int N, int N_obj> void GA<N, N_obj>::memory_clear()
     delete [] score_index;
     delete [] parents;
 
-    delete [] archive;
+    if(N_obj > 1)
+    {
+        delete [] archive;
+        delete [] archive_individuals;
+        delete [] archive_score;
+
+        delete [] front_size;
+        delete [] rank;
+        delete [] distance;
+
+        delete [] index_rank;
+        delete [] score_for_objective;
+
+        delete [] average_distance;
+        delete [] average_distance_deviation;
+        delete [] spread;
+        delete [] extreme_Pareto_solution;
+    }
 }
 
 
