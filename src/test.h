@@ -35,7 +35,7 @@ template<int N> double rosenbrock(const typename GA<N>::Individual &x)
 Vector<double, 2> mymulti1(const typename GA<2,2>::Individual &x)
 {
     Vector<double, 2> res;
-    res[0] = pow(x[0], 4) - 10.*x[0]*x[0] + x[0]*x[1] + pow(x[1], 4) + x[0]*x[0]*x[1]*x[1];
+    res[0] = pow(x[0], 4) - 10.*x[0]*x[0] + x[0]*x[1] + pow(x[1], 4) - x[0]*x[0]*x[1]*x[1];
     res[1] = pow(x[1], 4) - x[0]*x[0]*x[1]*x[1] + pow(x[0], 4) + x[0]*x[1];
 
     return res;

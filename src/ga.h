@@ -50,16 +50,26 @@ public:
     
     GA_options()
     {
-        population_size = 15 * N;
+        if(N_obj == 1)
+        {
+            population_size = 30;
+            max_generations = 100;
+        }
+        else
+        {
+            population_size = 60;
+            max_generations = 250;
+        }
+
         n_elite = 2;
 
-        max_generations = 400;
         stall_generations_limit = 50;
 
         tournament_size = 2;
         tournament_size_multiobjective = 2;
 
         crossover_fraction = 0.8;
+
         crossover_BLX_alpha = 0.5;
         mutation_gaussian_scale = 0.5;
         mutation_gaussian_shrink = 0.75;
@@ -142,7 +152,7 @@ public:
 
     bool pareto_dominates(int i, int j);   // check if i-th individual Pareto dominates j-th    
 
-    int *index_rank;                    // temporary
+    int *index;                    // temporary
     double *score_for_objective;        // temporary
 
     double *average_distance,
@@ -195,6 +205,7 @@ public:
     template<typename F> void run_multiobjective(F &f, Individual _lower_boundary, Individual _upper_boundary,
         Individual *initial_population = NULL, int initial_population_size = 0);
 
+    void output(const std::string &filename);
 };
 
 
@@ -220,7 +231,7 @@ template<int N, int N_obj> void GA<N, N_obj>::memory_allocate()
         rank = new int [2 * options.population_size];
         distance = new double [2 * options.population_size];
 
-        index_rank = new int [2 * options.population_size];
+        index = new int [2 * options.population_size];
         score_for_objective = new double [2 * options.population_size];
 
         average_distance = new double [options.max_generations];
@@ -253,7 +264,7 @@ template<int N, int N_obj> void GA<N, N_obj>::memory_clear()
         delete [] rank;
         delete [] distance;
 
-        delete [] index_rank;
+        delete [] index;
         delete [] score_for_objective;
 
         delete [] average_distance;

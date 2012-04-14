@@ -119,19 +119,22 @@ template<int N, int N_obj> template<typename F> void GA<N, N_obj>::run_multiobje
         wait_and_exit();
     }
 
-    if(!first_run)
+    if(first_run)
+    {
+        first_run = false;
+    }
+    else
     {
         memory_clear();
         memory_allocate();
     }
-    first_run = false;
 
     lower_boundary = _lower_boundary;
     upper_boundary = _upper_boundary;
 
 
     int
-        n_crossover_children = floor(0.5 + options.crossover_fraction * options.population_size),
+        n_crossover_children = round(options.crossover_fraction * options.population_size),
         n_mutation_children = options.population_size - n_crossover_children,
         n_parents = n_mutation_children + 2 * n_crossover_children;
 
@@ -159,7 +162,7 @@ template<int N, int N_obj> template<typename F> void GA<N, N_obj>::run_multiobje
 
         while(found_unranked)
         {
-            total_front_ranks++;
+            total_front_ranks++;  
             found_unranked = false;
 
             // find unranked indivuduals
@@ -193,16 +196,16 @@ template<int N, int N_obj> template<typename F> void GA<N, N_obj>::run_multiobje
 
                 }
             }
-          
+            
         } // while unranked individuals are found
         total_front_ranks--;
 
         // calculate the distances for each front =================================================
         double infinity = std::numeric_limits<double>::max();   // infinite distance flag
 
-        for(int r = 1; r < total_front_ranks; r++)
+        for(int r = 1; r <= total_front_ranks; r++)
         {
-            // get the size of current front 
+            // get the size and indexes of the current front 
             front_size[r] = 0;
             for(int i = 0; i < mobj_pop_size; i++)
             {
@@ -211,7 +214,7 @@ template<int N, int N_obj> template<typename F> void GA<N, N_obj>::run_multiobje
                     // set the distances of individuals on the front to zero
                     distance[i] = 0.;
                     // store the indexes of the individuals of the current front
-                    index_rank[front_size[r]] = i;
+                    index[front_size[r]] = i;
                     front_size[r]++;
                 }
             }
@@ -222,23 +225,27 @@ template<int N, int N_obj> template<typename F> void GA<N, N_obj>::run_multiobje
                 // get score array for current objective
                 for(int i = 0; i < front_size[r]; i++)
                 {
-                    score_for_objective[i] = score[index_rank[i]][obj];
+                    score_for_objective[index[i]] = score[index[i]][obj];
                 }
 
                 // sort indexes according to increasing score_for_objective_order
                 comp.set_objective(score_for_objective);
-                std::sort(index_rank, index_rank + front_size[r], comp);
+                std::sort(index, index + front_size[r], comp);
                 
                 // distance is infinite for individuals at Pareto front ends
-                distance[index_rank[0]] = infinity;
-                distance[index_rank[front_size[r] - 1]] = infinity;
+                distance[index[0]] = infinity;
+                distance[index[front_size[r] - 1]] = infinity;
 
-                double score_range_for_objective = fabs(score[index_rank[0]][obj] - score[index_rank[front_size[r] - 1]][obj]); // this can be zero, test it ==================================
-
+                //double score_range_for_objective = fabs(score[index[0]][obj] - score[index[front_size[r] - 1]][obj]); // this can be zero, test it ==================================
+                double score_range_for_objective = 1. + std::max(fabs(score[index[0]][obj]), fabs(score[index[front_size[r] - 1]][obj]));
                 for(int i = 1; i < front_size[r] - 1; i++)
                 {
-                    if(distance[index_rank[i]] != infinity)
-                        distance[index_rank[i]] += (score[index_rank[i + 1]][obj] - score[index_rank[i - 1]][obj]) / score_range_for_objective;
+                    if(distance[index[i]] != infinity)
+                        distance[index[i]] += fabs(score[index[i + 1]][obj] - score[index[i - 1]][obj]) / score_range_for_objective;
+                    else
+                    {
+                        std::cout << "oops\n";
+                    }
                 }
             } // for objectives ...
 
@@ -246,7 +253,7 @@ template<int N, int N_obj> template<typename F> void GA<N, N_obj>::run_multiobje
 
         // fill the archive =======================================================================
         int archive_size = 0;
-        for(int r = 1; r < total_front_ranks; r++)
+        for(int r = 1; r <= total_front_ranks; r++)
         {
             if(front_size[r] > options.population_size - archive_size)
             {
@@ -259,7 +266,7 @@ template<int N, int N_obj> template<typename F> void GA<N, N_obj>::run_multiobje
                 {
                     if(rank[i] == r)
                     {
-                        index_rank[current_front_size] = i;
+                        index[current_front_size] = i;
                         current_front_size++;
                     }
                 }
@@ -267,17 +274,17 @@ template<int N, int N_obj> template<typename F> void GA<N, N_obj>::run_multiobje
                 // set distance array as score
                 for(int i = 0; i < front_size[r]; i++)
                 {
-                    score_for_objective[i] = distance[index_rank[i]];
+                    score_for_objective[index[i]] = distance[index[i]];
                 }
 
                 // sort indexes according to increasing distance
                 comp.set_objective(score_for_objective);
-                std::sort(index_rank, index_rank + front_size[r], comp);
+                std::sort(index, index + front_size[r], comp);
 
                 // pick the most distant 'n_selected' individuals
                 for(int i = 0; i < n_selected; i++)
                 {
-                    archive[archive_size] = index_rank[front_size[r] - 1 - i];
+                    archive[archive_size] = index[front_size[r] - 1 - i];
                     archive_size++;
                 }
                 
@@ -315,7 +322,7 @@ template<int N, int N_obj> template<typename F> void GA<N, N_obj>::run_multiobje
             if(rank[i] == 1 && distance[i] != infinity)
             {
                 average_distance[generation] += distance[i];
-                index_rank[n_finite] = i;
+                index[n_finite] = i;
                 n_finite++;
             }
         }
@@ -325,7 +332,7 @@ template<int N, int N_obj> template<typename F> void GA<N, N_obj>::run_multiobje
             average_distance[generation] /= n_finite;
             for(int i = 0; i < n_finite; i++)
             {
-                average_distance_deviation[generation] += pow(average_distance[generation] - distance[index_rank[i]], 2);
+                average_distance_deviation[generation] += pow(average_distance[generation] - distance[index[i]], 2);
             }
             average_distance_deviation[generation] = sqrt(average_distance_deviation[generation] / n_finite);
         }
@@ -355,6 +362,16 @@ template<int N, int N_obj> template<typename F> void GA<N, N_obj>::run_multiobje
         else
             spread[generation] = extreme_Pareto_distance;
 
+        // output monitoring data
+        if(options.verbose)
+        {
+            std::cout << generation << "\tspread = " << spread[generation] << "\tPareto front size = " << front_size[1] << "\n";
+        }
+        
+        // no need to breed in the last generation ================================================
+        if(generation == options.max_generations - 1)
+            break;
+
         // breed the new generation using archive =================================================
         // get parents' indexes
         selection_tournament_multiobjective(n_parents);
@@ -379,11 +396,6 @@ template<int N, int N_obj> template<typename F> void GA<N, N_obj>::run_multiobje
             score[i + options.population_size] = archive_score[i];
         }
         
-        if(options.verbose)
-        {
-            std::cout << generation << "\tspread = " << spread[generation] << "\tPareto front size = " << front_size[1] << "\n";
-        }
-
         generation++;
     } // main GA loop
 }
@@ -395,12 +407,12 @@ template<int N, int N_obj> bool GA<N, N_obj>::pareto_dominates(int i, int j)
 {
     bool res = false;
 
-    for(int k = 0; k < N; k++)
+    for(int obj = 0; obj < N_obj; obj++)
     {
-        if(score[i][k] < score[j][k])
+        if(score[i][obj] < score[j][obj])
             res = true;         // i may dominate j (we need better value in at least one objective to dominate)
 
-        if(score[j][k] < score[i][k])
+        if(score[j][obj] < score[i][obj])
             return false;       // i does not dominate j for sure
     }
 
@@ -485,7 +497,7 @@ template <int N, int N_obj> void GA<N, N_obj>::selection_tournament_multiobjecti
             else
             {
                 if(rank[candidate] == rank[best] && distance[candidate] > distance[best])
-                        best = candidate;
+                    best = candidate;
             }
         }
         parents[i] = best;
@@ -498,7 +510,7 @@ template <int N, int N_obj> void GA<N, N_obj>::crossover_arithmetic
 	(const Individual &parent1, const Individual &parent2, Individual &child)
 {
     double R = dist01(rnd_generator);
-    child = R * parent1 + (1 - R) * parent2;
+    child = R * parent1 + (1. - R) * parent2;
 }
 
 
@@ -533,13 +545,13 @@ template <int N, int N_obj> void GA<N, N_obj>::crossover_BLX
                low = parent1[i] - I * options.crossover_BLX_alpha,
                high = parent2[i] + I * options.crossover_BLX_alpha;
 
-        child[i] = low + R * (high - low);
+        child[i] = R * low + (1. - R) * high;
 
         // modify child to satisfy constraints
         //child[i] = std::max(child[i], lower_boundary[i]);
         //child[i] = std::min(child[i], upper_boundary[i]);
         if(child[i] < lower_boundary[i] || child[i] > upper_boundary[i])
-            child[i] = (parent1[i] + parent2[i]) / 2.;
+            child[i] = (R * parent1[i] + (1. - R) * parent2[i]);
     }
 }
 
@@ -769,5 +781,45 @@ template<int N, int N_obj> bool GA<N, N_obj>::feasible(const Individual &x)
 
     return true;
 }
+
+
+template <int N, int N_obj> void GA<N, N_obj>::output(const std::string &filename)
+{
+    std::ofstream file_output(filename.c_str());
+		
+	if (!file_output) 
+	{
+		std::cout << "f_write_table: error reading " << filename.c_str() << "\n";
+		wait_and_exit();
+	}
+
+    if(N_obj == 1)
+    {
+        file_output << best_score[generation] << "\n" << best_individual[generation];
+    }
+    else
+    {
+        bool first = true;
+        int n_out = 2. * options.population_size;	
+        for(int i = 0; i < n_out; i++)
+	    {
+            if(rank[i] == 1)
+            {
+                if(first)
+                {
+                    file_output << score[i];                    
+                    first = false;
+                }
+                else
+                {
+                    file_output << "\n";
+                    file_output << score[i];                    
+                }
+            }
+	    }
+    }
+	file_output.close();
+}
+
 
 #endif

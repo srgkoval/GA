@@ -22,24 +22,7 @@ void main()
 
     GA<2,2> mobj;
     mobj.run_multiobjective(mymulti1, Vector<double, n_arg>(-5., -5.), Vector<double, n_arg>(5., 5.));
-
-    std::string filename = "multiobjective.txt";
-    std::ofstream file_output(filename.c_str());
-		
-	if (!file_output) 
-	{
-		std::cout << "f_write_table: error reading " << filename.c_str() << "\n";
-		wait_and_exit();
-	}
-	int n_out = 2. * mobj.options.population_size;	
-    for(int i = 0; i < n_out; i++)
-	{
-        file_output << mobj.score[i];
-		if (i != n_out - 1)
-			file_output << "\n";
-	}
-
-	file_output.close();
+    mobj.output("e:\\Programming - code and etc\\Genetic Algorithm\\Output\\ga.txt"); 
 
 	
     //int range = 10;
