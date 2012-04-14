@@ -171,6 +171,7 @@ public:
 
     Selection selection_stochastic_uniform,
               selection_tournament,
+              selection_tournament_shuffle,
               selection_tournament_multiobjective;
 
     Crossover crossover_arithmetic,

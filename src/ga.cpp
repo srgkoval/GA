@@ -242,10 +242,6 @@ template<int N, int N_obj> template<typename F> void GA<N, N_obj>::run_multiobje
                 {
                     if(distance[index[i]] != infinity)
                         distance[index[i]] += fabs(score[index[i + 1]][obj] - score[index[i - 1]][obj]) / score_range_for_objective;
-                    else
-                    {
-                        std::cout << "oops\n";
-                    }
                 }
             } // for objectives ...
 
@@ -365,7 +361,8 @@ template<int N, int N_obj> template<typename F> void GA<N, N_obj>::run_multiobje
         // output monitoring data
         if(options.verbose)
         {
-            std::cout << generation << "\tspread = " << spread[generation] << "\tPareto front size = " << front_size[1] << "\n";
+            std::cout << generation << "\tspread = " << spread[generation] << "\taverage distance = " << average_distance[generation]
+                << "\tPareto front size = " << front_size[1] << "\n";
         }
         
         // no need to breed in the last generation ================================================
@@ -383,6 +380,11 @@ template<int N, int N_obj> template<typename F> void GA<N, N_obj>::run_multiobje
         int i_parent = 0;
         for(int i = 0; i < n_mutation_children; ++i, ++i_parent)
             (this->*options.mutation) (population[parents[i_parent]], children[i]);
+
+        //if(options.verbose)
+        //{
+        //    std::cout << "\tma_step_size = " << ma_step_size << "\n";
+        //}
 
         for(int i = n_mutation_children; i < options.population_size; ++i, i_parent+=2)
             (this->*options.crossover) (population[parents[i_parent]], population[parents[i_parent + 1]], children[i]);
@@ -459,7 +461,7 @@ template <int N, int N_obj> void GA<N, N_obj>::selection_stochastic_uniform(int 
 }
 
 
-template <int N, int N_obj> void GA<N, N_obj>::selection_tournament(int n)
+template <int N, int N_obj> void GA<N, N_obj>::selection_tournament_shuffle(int n)
 {
     int *indexes = new int [options.population_size];
     for(int i = 0; i < options.population_size; ++i)
@@ -479,6 +481,25 @@ template <int N, int N_obj> void GA<N, N_obj>::selection_tournament(int n)
 
     delete [] indexes;
 }
+
+
+template <int N, int N_obj> void GA<N, N_obj>::selection_tournament(int n)
+{
+    for(int i = 0; i < n; i++)
+    {
+        int best = floor(options.population_size * dist01(rnd_generator));
+
+        for(int j = 1; j < options.tournament_size; j++)
+        {
+            int candidate = floor(options.population_size * dist01(rnd_generator));
+            
+            if(fitness[candidate] > fitness[best])
+                best = candidate;
+        }
+        parents[i] = best;
+    }
+}
+
 
 template <int N, int N_obj> void GA<N, N_obj>::selection_tournament_multiobjective(int n)
 {
