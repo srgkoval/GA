@@ -41,6 +41,8 @@ public:
     double pareto_fraction,
            pareto_R;
 
+    double termination_tolerance;
+
     typename GA<N, N_obj>::pFitnessScaling scaling;
     typename GA<N, N_obj>::pSelection selection;
     typename GA<N, N_obj>::pCrossover crossover;
@@ -57,7 +59,7 @@ public:
         }
         else
         {
-            population_size = 60;
+            population_size = 100;
             max_generations = 250;
         }
 

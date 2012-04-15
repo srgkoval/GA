@@ -236,8 +236,10 @@ template<int N, int N_obj> template<typename F> void GA<N, N_obj>::run_multiobje
                 distance[index[0]] = infinity;
                 distance[index[front_size[r] - 1]] = infinity;
 
-                //double score_range_for_objective = fabs(score[index[0]][obj] - score[index[front_size[r] - 1]][obj]); // this can be zero, test it ==================================
-                double score_range_for_objective = 1. + std::max(fabs(score[index[0]][obj]), fabs(score[index[front_size[r] - 1]][obj]));
+                double score_range_for_objective = fabs(score[index[0]][obj] - score[index[front_size[r] - 1]][obj]); // this can be zero, test it ==================================
+                if(score_range_for_objective == 0. || score_range_for_objective == -1. * 0.)
+                    score_range_for_objective = 1. + std::max(fabs(score[index[0]][obj]), fabs(score[index[front_size[r] - 1]][obj]));
+                
                 for(int i = 1; i < front_size[r] - 1; i++)
                 {
                     if(distance[index[i]] != infinity)
@@ -743,7 +745,7 @@ template <int N, int N_obj> void GA<N, N_obj>::mutation_adaptive
     if( !success )
     {
         child = parent;
-        if(options.verbose)
+        if(options.verbose && N < 5)
             std::cout << "mutation failed at x = " << parent << "\n";
     }
 }

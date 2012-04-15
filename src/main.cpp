@@ -5,6 +5,8 @@
 #include "test.h"
 
 const int n_arg = 2;
+const int n_mult = 3;
+
 
 void main()
 {
@@ -12,19 +14,18 @@ void main()
 	start = clock();
     
     GA<n_arg> alg;
-    Vector<double, n_arg> lower, upper;
+   // Vector<double, n_arg> lower, upper;
+   // lower = -1.;
+   // upper = 1.;
 
-    lower = -1.;
-    upper = 1.;
    // alg.run(rastrigin<n_arg>, lower, upper);
    // alg.run(schwefel<n_arg>, Vector<double, n_arg>(-500., -500.), Vector<double, n_arg>(500., 500.));
    // alg.run(rosenbrock<n_arg>, Vector<double, n_arg>(-2., -2.), Vector<double, n_arg>(2., 2.));
 
-    GA<2,2> mobj;
-    mobj.run_multiobjective(mymulti1, Vector<double, n_arg>(-5., -5.), Vector<double, n_arg>(5., 5.));
-    mobj.output("e:\\Programming - code and etc\\Genetic Algorithm\\Output\\ga.txt"); 
+    run_ZDT4();
 
-	
+
+
     //int range = 10;
     //for(int i = 0; i < 100; i++)
     //{
