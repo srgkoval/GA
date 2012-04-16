@@ -1,9 +1,12 @@
 #ifndef GA_CPP
 #define GA_CPP
 
+#include "boost\lexical_cast.hpp"
+
 #include "ga.h"
 #include "vector.h"
 #include "support.h"
+
 
 // single-objective ===============================================================================
 
@@ -69,7 +72,9 @@ template<int N, int N_obj> template<typename F> void GA<N, N_obj>::run
         }
 
         // break if no improvement for last 'options.stall_generations_limit' generations
-        if(generation - last_improvement_generation > options.stall_generations_limit)
+
+
+        if(generation - last_improvement_generation > options.stall_generations_limit || generation == options.max_generations)
             break;
 
         (this->*options.scaling)();
@@ -105,6 +110,9 @@ template<int N, int N_obj> template<typename F> void GA<N, N_obj>::run
 
         generation++;
     } // main GA loop
+
+    std::string filename_objective = options.output_directory + "single_objective" + ".txt";
+    output(filename_objective);
 }
 
 
@@ -367,8 +375,53 @@ template<int N, int N_obj> template<typename F> void GA<N, N_obj>::run_multiobje
                 << "\tPareto front size = " << front_size[1] << "\n";
         }
         
-        // no need to breed in the last generation ================================================
-        if(generation == options.max_generations - 1)
+        // check termination criteria =============================================================
+        bool terminate = false;
+        int window = options.stall_generations_limit + 1;
+
+        if(generation > window)
+        {
+            double mean_spread = 0.;
+            for(int i = 0; i < window; i++)
+                mean_spread += spread[generation - i];
+            mean_spread /= window;
+
+            double spread_weight = 0.5;
+            double spread_change = 0.;    
+            for(int i = 1; i < window; i++)
+            {
+                spread_change += pow(spread_weight, i) * fabs(spread[generation - i + 1] - spread[generation - i]) / (1 + spread[generation - i]);
+            }
+            spread_change /= window;
+
+            if(spread_change < options.spread_change_tolerance && mean_spread >= spread[generation])
+            {
+                std::cout << "spread change = " << spread_change << " is less than termination tolerance\n";
+                terminate = true;
+            }
+        }
+        
+        // output the data ========================================================================
+        if(generation == options.max_generations - 1 || generation == 0 || generation % options.output_generations_step == 0 || terminate == true)
+        {
+            std::string filename_objective = options.output_directory + "objective" + boost::lexical_cast<std::string>(generation) + ".txt";
+            output(filename_objective, true);
+
+            std::string filename_parameter = options.output_directory + "parameter" + boost::lexical_cast<std::string>(generation) + ".txt";
+            output(filename_parameter, false);
+        }
+        if(generation == options.max_generations - 1 || terminate == true)
+        {
+            std::string filename_objective = options.output_directory + "objective_final" + ".txt";
+            output(filename_objective, true);
+
+            std::string filename_parameter = options.output_directory + "parameter_final" + ".txt";
+            output(filename_parameter, false);
+        }
+
+        
+        // no need to breed in the last generation
+        if(generation == options.max_generations - 1 || terminate == true)
             break;
 
         // breed the new generation using archive =================================================
@@ -806,7 +859,7 @@ template<int N, int N_obj> bool GA<N, N_obj>::feasible(const Individual &x)
 }
 
 
-template <int N, int N_obj> void GA<N, N_obj>::output(const std::string &filename)
+template <int N, int N_obj> void GA<N, N_obj>::output(const std::string &filename, bool output_objective)
 {
     std::ofstream file_output(filename.c_str());
 		
@@ -818,7 +871,12 @@ template <int N, int N_obj> void GA<N, N_obj>::output(const std::string &filenam
 
     if(N_obj == 1)
     {
-        file_output << best_score[generation] << "\n" << best_individual[generation];
+        for(int i = 0; i <= generation; i++)
+        {
+            file_output << best_score[i] << "\t" << best_individual[i];
+            if(i != generation)
+                file_output << "\n";
+        }
     }
     else
     {
@@ -830,13 +888,19 @@ template <int N, int N_obj> void GA<N, N_obj>::output(const std::string &filenam
             {
                 if(first)
                 {
-                    file_output << score[i];                    
+                    if(output_objective)
+                        file_output << score[i];
+                    else
+                        file_output << population[i];
                     first = false;
                 }
                 else
                 {
                     file_output << "\n";
-                    file_output << score[i];                    
+                    if(output_objective)
+                        file_output << score[i];
+                    else
+                        file_output << population[i];                  
                 }
             }
 	    }

@@ -150,6 +150,19 @@ template <int N> Vector<double, 2> ZDT6(const typename GA<N, 2>::Individual &x)
 
 //  test run routines =============================================================================
 
+void run_MATLAB_example()
+{
+    const int n = 2;
+    Vector<double, n> lower, upper;
+    lower = -5.;
+    upper = 5.;
+
+    GA<n,2> ga;
+    ga.run_multiobjective(mymulti1, lower, upper);
+    ga.output("e:\\Programming - code and etc\\Genetic Algorithm\\Output\\ga.txt"); 
+}
+
+
 void run_KUR()
 {
     const int n = 3;

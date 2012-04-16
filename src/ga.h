@@ -41,7 +41,7 @@ public:
     double pareto_fraction,
            pareto_R;
 
-    double termination_tolerance;
+    double spread_change_tolerance;     // termination criterion
 
     typename GA<N, N_obj>::pFitnessScaling scaling;
     typename GA<N, N_obj>::pSelection selection;
@@ -49,7 +49,9 @@ public:
     typename GA<N, N_obj>::pMutation mutation;
 
     bool verbose;
-    
+    std::string output_directory;
+    int output_generations_step;
+
     GA_options()
     {
         if(N_obj == 1)
@@ -79,12 +81,16 @@ public:
         pareto_fraction = 0.35;
         pareto_R = 0.8;
 
+        spread_change_tolerance = 1.e-4;
+
         scaling = &GA<N, N_obj>::scaling_rank;
         selection = &GA<N, N_obj>::selection_tournament;
         crossover = &GA<N, N_obj>::crossover_BLX;
         mutation = &GA<N, N_obj>::mutation_adaptive;
 
         verbose = true;
+        output_directory = "e:\\Programming - code and etc\\Genetic Algorithm\\Output\\";
+        output_generations_step = 5;
     }
 };
 
@@ -208,7 +214,7 @@ public:
     template<typename F> void run_multiobjective(F &f, Individual _lower_boundary, Individual _upper_boundary,
         Individual *initial_population = NULL, int initial_population_size = 0);
 
-    void output(const std::string &filename);
+    void output(const std::string &filename, bool output_objective = true);
 };
 
 
